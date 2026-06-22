@@ -1,0 +1,21 @@
+{
+  "name": "saucedemo-qa-assignment",
+  "version": "1.0.0",
+  "description": "Senior QA Engineer take-home assignment: UI automation (Playwright + TypeScript, POM) for saucedemo.com and API automation for fakestoreapi.com",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --project=ui",
+    "test:ui:headed": "playwright test --project=ui --headed",
+    "test:ui:debug": "playwright test --project=ui --debug",
+    "test:api": "playwright test --project=api",
+    "report": "playwright show-report",
+    "codegen": "playwright codegen https://www.saucedemo.com"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^20.19.43",
+    "typescript": "^5.5.0",
+    "zod": "^3.23.8"
+  }
+}
