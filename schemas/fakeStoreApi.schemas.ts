@@ -7,6 +7,25 @@ import { z } from 'zod';
  * reason) when the API drifts from it.
  */
 
+export const ProductSchema = z.object({
+  id: z.number(),
+  title: z.string().min(1),
+  price: z.number().nonnegative(),
+  description: z.string(),
+  category: z.string(),
+  image: z.string().url(),
+  rating: z
+    .object({
+      rate: z.number(),
+      count: z.number(),
+    })
+    .optional(),
+});
+
+export const ProductListSchema = z.array(ProductSchema);
+
+export const CategoryListSchema = z.array(z.string());
+
 export const UserSchema = z.object({
   id: z.number(),
   email: z.string().email(),
