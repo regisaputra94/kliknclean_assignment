@@ -54,3 +54,16 @@ export const AuthTokenSchema = z.object({
   token: z.string().min(10),
 });
 
+export const CartProductLineSchema = z.object({
+  productId: z.number(),
+  quantity: z.number(),
+});
+
+export const CartSchema = z.object({
+  id: z.number(),
+  userId: z.number(),
+  date: z.string(),
+  products: z.array(CartProductLineSchema),
+});
+
+export const CartListSchema = z.array(CartSchema);
