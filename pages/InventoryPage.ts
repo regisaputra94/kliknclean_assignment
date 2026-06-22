@@ -25,7 +25,7 @@ export class InventoryPage extends BasePage {
   }
 
   readonly inventoryItems = this.page.locator('.inventory_item');
-  readonly sortDropdown = this.page.locator('[data-test="product_sort_container"]');
+  readonly sortDropdown = this.page.locator('[data-test="product-sort-container"]');
   readonly cartBadge = this.page.locator('.shopping_cart_badge');
   readonly cartLink = this.page.locator('.shopping_cart_link');
   readonly itemNames = this.page.locator('.inventory_item_name');

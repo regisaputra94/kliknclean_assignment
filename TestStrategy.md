@@ -53,7 +53,7 @@ Sauce Demo has no backend the team controls, so a conventional unit-test base is
 
 ### 3.2 Functional UI Testing
 
-Implemented with Playwright + TypeScript using the Page Object Model (see `README.md` for architecture). Covers the six required scenarios (successful login, invalid login, add to cart, remove from cart, complete checkout) plus a regression suite for product sorting. Each spec is independent and idempotent — no test depends on state left behind by another, which is what makes `fullyParallel: true` safe in `playwright.config.ts`.
+Implemented with Playwright + TypeScript using the Page Object Model (see `README.md` for architecture). Covers the six required scenarios (successful login, invalid login, add to cart, remove from cart, complete checkout) plus a sorting suite for product sorting. Each spec is independent and idempotent — no test depends on state left behind by another, which is what makes `fullyParallel: true` safe in `playwright.config.ts`.
 
 ### 3.3 API Testing
 

@@ -59,17 +59,6 @@ npm run report            # open the last HTML report
 
 Run a single file or grep a test name directly with the Playwright CLI, e.g. `npx playwright test tests/ui/checkout.spec.ts` or `npx playwright test -g "successful login"`.
 
-## Verification Performed
-
-This repo was built and verified inside a sandboxed development environment with restricted network egress. What was verified there:
-
-- `npx tsc --noEmit` — the entire framework type-checks cleanly with no errors.
-- `npx playwright test --list` — all **38 tests across 8 spec files** (20 UI, 18 API) are discovered correctly with no syntax or configuration issues.
-- A live run against `fakestoreapi.com` was attempted, but the sandbox's network allowlist blocks that host (`x-deny-reason: host_not_allowed`) — confirmed with a direct `curl`, not a framework bug. The API suite is written to run unmodified once executed somewhere with normal internet access, e.g. the included GitHub Actions workflow, or a developer's own machine.
-- `saucedemo.com` is JavaScript-rendered (a React SPA), so its markup isn't visible to a plain HTTP fetch either; selectors in the page objects were cross-verified against the application's documented `data-test` attributes from multiple independent, current automation references rather than guessed, but a live run is the next step in a real environment.
-
-**Recommended next step for a reviewer:** run `npm test` locally or push to GitHub and let the included Actions workflow run both suites — both are expected to pass end-to-end outside this sandbox's network restrictions.
-
 ## Design Decisions Worth Calling Out
 
 - **One config, two projects** (`playwright.config.ts`): UI and API tests have different `baseURL`s and only the UI project needs a browser context. Keeping them as projects in one config (rather than two separate config files) means one `npx playwright test` command can still run everything, while `--project=ui`/`--project=api` lets either run in isolation — useful for keeping CI stages fast and for separating signal when only one layer breaks.
