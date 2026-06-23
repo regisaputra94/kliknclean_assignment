@@ -1,101 +1,121 @@
-# Test Strategy — Sauce Demo (saucedemo.com)
+# Test Strategy — Sauce Demo
 
 **Author:** Regi Saputra
 **Application Under Test:** https://www.saucedemo.com
 
 ---
 
-## 1. Purpose
+# 1. Objective
 
-This document defines the testing approach for Sauce Demo, an e-commerce demo application covering authentication, product browsing, cart management, and checkout. It is written as the founding QA strategy artifact for a team that currently has no automation framework, no documented quality standards, and no formal test process — the goal is not just to describe *how this assignment was tested*, but to set a pattern the team can keep using afterward.
+The objective of this testing effort is to ensure the reliability and quality of the application's core e-commerce functionality, with a focus on business-critical user journeys such as authentication, cart management, and checkout.
 
-## 2. Scope
+---
 
-### 2.1 In Scope
+# 2. Scope
 
-- **Authentication**: successful login, invalid credential handling, account lockout (`locked_out_user`), session boundaries (accessing protected pages while logged out).
-- **Product catalog**: inventory listing, product detail data, sorting (name/price, ascending/descending).
-- **Cart management**: add/remove single and multiple items, badge count accuracy, cart persistence across navigation.
-- **Checkout**: customer information validation, order summary math (subtotal/tax/total), order completion, cancel flows.
-- **API layer** (Fake Store API, used as a stand-in REST service for this assignment): users, authentication, products, categories, and carts endpoints — positive, negative, and schema validation.
-- **Cross-functional concerns**: basic accessibility smells encountered incidentally during UI testing, and visual/data consistency between the six special Sauce Demo user personas (`standard_user`, `problem_user`, `error_user`, `visual_user`, `performance_glitch_user`, `locked_out_user`), since these personas exist specifically to seed known defects for QA practice.
+### In Scope
 
-### 2.2 Out of Scope
+* Authentication (successful login, invalid login, locked-out user)
+* Product Catalog (inventory display and product sorting)
+* Cart Management (add/remove items, cart badge validation, cart persistence)
+* Checkout Flow (customer information validation, order summary, order completion)
+* API Testing (authentication, products, users, and carts endpoints)
+* Exploratory testing using Sauce Demo's special user personas
 
-- **Payment processing**: Sauce Demo's checkout is a simulated flow with no real payment gateway, so PCI-relevant scenarios (card validation, payment failures, fraud checks) are not applicable.
-- **Backend/database verification**: no direct DB access is available; all assertions are made through the UI and the public API surface.
-- **Load/performance testing**.
-- **Security testing**.
-- **Cross-browser/cross-device matrix**: automation targets Chromium headless for speed and CI reliability/
-- **Localization/internationalization**: the application is English-only with no locale switching.
-- **The Fake Store API's write operations** (`POST`/`PUT`/`PATCH`/`DELETE`) for products/carts/users beyond what's required by the assignment.
+### Out of Scope
 
-## 3. Test Approach
+* Payment gateway testing
+* Database validation
+* Performance and load testing
+* Security testing
+* Localization testing
+* Cross-browser and cross-device testing
 
-### 3.1 Test Levels and the Test Pyramid
+---
 
-```
-            ▲
-           ╱ ╲          UI End-to-End (Playwright)
-          ╱   ╲         ~20 scenarios: login, cart, checkout, sorting
-         ╱─────╲        Slow, high-fidelity, run on every PR
-        ╱       ╲
-       ╱  API    ╲      API Tests (Playwright request context)
-      ╱  Testing  ╲     ~18 scenarios: schema, contract, negative cases
-     ╱─────────────╲    Fast, stable, run on every commit
-    ╱               ╲
-   ╱  Exploratory /   ╲ Manual/exploratory testing
-  ╱  Static Analysis   ╲ Risk-based, charter-driven, pre-release
- ╱───────────────────────╲
-```
+# 3. Test Approach
 
-Sauce Demo has no backend the team controls, so a conventional unit-test base isn't available to us as testers; in a real engineering org, that base would be owned by developers and this pyramid would sit on top of it.
+## UI Automation Testing
 
-### 3.2 Functional UI Testing
+UI automation is implemented using Playwright and TypeScript following the Page Object Model (POM) design pattern.
 
-Implemented with Playwright + TypeScript using the Page Object Model (see `README.md` for architecture). Covers the six required scenarios (successful login, invalid login, add to cart, remove from cart, complete checkout) plus a sorting suite for product sorting. Each spec is independent and idempotent — no test depends on state left behind by another, which is what makes `fullyParallel: true` safe in `playwright.config.ts`.
+Key coverage areas:
 
-### 3.3 API Testing
+* Login
+* Logout
+* Add to Cart
+* Remove from Cart
+* Product Sorting
+* Checkout Flow
 
-Implemented against the Fake Store API using Playwright's built-in `request` fixture (no separate HTTP client needed, which keeps the toolchain to one language and one test runner). Coverage includes:
-- Positive cases: valid requests return correct status codes, correct content types, and schema-valid bodies.
-- Negative cases: invalid credentials, non-existent resources, malformed input.
-- Schema validation: every response is validated against a `zod` schema (`schemas/fakeStoreApi.schemas.ts`), so a field being renamed, retyped, or dropped fails the build with a precise diff instead of silently passing.
-- Cross-resource integrity: cart line items are checked against the products list to confirm referenced product IDs actually exist — a class of bug that single-endpoint testing alone won't catch.
+## API Testing
 
-### 3.4 Exploratory Testing
+API tests are implemented using Playwright's built-in request capabilities.
 
-Session-based exploratory testing was performed using Sauce Demo's built-in "broken" personas (`problem_user`, `error_user`, `visual_user`), which exist specifically to seed defects for QA practice. This is documented separately in `BugReport.md`. Exploratory testing is treated as a complement to automation, not a replacement — automation catches regressions on what we already know to check; exploration is how we find what we don't yet know to check.
+Key coverage areas:
 
+* Positive scenarios
+* Negative scenarios
+* Response validation
+* API contract and schema validation
 
-## 4. Risk Assessment
+## Exploratory Testing
 
-| Risk | Likelihood | Impact | Mitigation |
-|---|---|---|---|
-| Checkout flow breaks (blocks revenue) | Medium | Critical | Highest test density here: happy path, multi-item, validation, and cancel are all covered; flagged as priority #1 for any future smoke suite |
-| Cart state desyncs between pages (badge vs. actual contents) | Medium | High | Explicit assertions that cart state is consistent across inventory, cart, and checkout pages, not just within one page |
-| Silent pricing/math errors (tax, totals) | Low-Medium | High | Automated subtotal+tax=total check on every checkout test, not just a snapshot of displayed text |
-| API contract drift (field renamed/removed) | Medium | Medium | Schema validation on every response rather than spot-checking a few fields |
-| Flaky UI tests from network/animation timing | Medium | Medium (erodes trust in suite) | Playwright auto-waiting, explicit `expect` polling, no hard sleeps, retries enabled in CI only |
-| Test suite becomes a maintenance burden as the app grows | Medium | High (long-term) | Page Object Model isolates selectors from test logic; one locator change updates one file, not N specs |
-| False confidence from public demo app being unusually stable | Low | Medium | Strategy and framework are written to generalize to a real product, not tuned to this one app's quirks |
+Exploratory testing is performed to identify issues that may not be covered by automated tests, particularly using Sauce Demo's special test accounts:
 
-## 5. Test Environments & Tools
+* `problem_user`
+* `error_user`
+* `visual_user`
 
-| Layer | Tool | Rationale |
-|---|---|---|
-| UI automation | Playwright + TypeScript | Auto-waiting reduces flakiness vs. Selenium; native TypeScript support; built-in trace/video/screenshot capture speeds up debugging failures |
-| API automation | Playwright `request` fixture + `zod` | One toolchain for both UI and API reduces context-switching and CI complexity; `zod` gives typed, readable schema validation |
-| CI | GitHub Actions | Runs both suites on every PR and nightly; uploads HTML + JUnit reports as artifacts |
-| Reporting | Playwright HTML reporter, JUnit XML | HTML for humans debugging locally/in CI; JUnit for any future integration with a test management or CI dashboard tool |
+---
 
-## 6. Entry & Exit Criteria
+# 4. Risk-Based Testing
 
-**Entry criteria** for a test cycle: build/deploy is accessible, no blocking environment issues, test data available.
+| Area             | Risk Level | Mitigation                                                      |
+| ---------------- | ---------- | --------------------------------------------------------------- |
+| Checkout Flow    | Critical   | Highest automation priority and smoke test coverage             |
+| Cart Management  | High       | Validate consistency across inventory, cart, and checkout pages |
+| Pricing & Totals | High       | Verify subtotal, tax, and total calculations                    |
+| API Contracts    | Medium     | Implement schema validation for responses                       |
+| Test Stability   | Medium     | Use Playwright auto-waiting, assertions, and CI retries         |
 
-**Exit criteria** for sign-off: all `@smoke`-tagged tests pass (these cover the critical paths: login, core cart operations, checkout completion, core API contracts), no open Critical/High severity defects in scope, and any known issues are documented with a clear severity and workaround.
+---
 
-## 7. Defect Management
+# 5. Tools
 
-Defects are logged with title, description, reproduction steps, expected vs. actual result, severity, and a recommendation (see `BugReport.md` for the template applied to this assignment). Severity is assessed by user impact, not by how interesting the bug is to find — a cosmetic issue on a high-traffic page can outrank a functional bug in a rarely used flow.
+| Area              | Tool                               |
+| ----------------- | ---------------------------------- |
+| UI Automation     | Playwright + TypeScript            |
+| API Testing       | Playwright Request API             |
+| Schema Validation | Zod                                |
+| CI/CD             | GitHub Actions                     |
+| Reporting         | Playwright HTML Report & JUnit XML |
 
+---
+
+# 6. Entry & Exit Criteria
+
+### Entry Criteria
+
+* Test environment is accessible.
+* Required test data is available.
+
+### Exit Criteria
+
+* All smoke tests pass successfully.
+* No open Critical or High severity defects.
+* Known issues are documented and communicated.
+
+---
+
+# 7. Defect Management
+
+All defects should include:
+
+* Clear description
+* Reproduction steps
+* Expected vs. actual results
+* Severity level
+* Recommended action
+
+Defect priority is determined based on business impact and user impact rather than technical complexity.
